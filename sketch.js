@@ -1,66 +1,105 @@
-let notes = [];
-let beatTimer = 0;
-let currentMode = 'pitch'; // pitch, beat, volume, chord
+let mode = 'pitch';
+let trails = []; // 存储旋律线 
+let beatCount = 0;
+let lastBeatTime = 0;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  colorMode(HSB, 360, 100, 100); // 使用 HSB 方便实现“冷暖色”转换 [cite: 3, 15]
+  colorMode(HSB, 360, 100, 100); // 使用 HSB 方便处理冷暖色映射 [cite: 3]
 }
 
 function draw() {
-  background(0, 0, 5); // 深色背景突出光效 
+  background(0, 0, 5); // 深色背景
   
-  if (currentMode === 'pitch') {
-    drawPitchMode();
-  } else if (currentMode === 'beat') {
-    drawBeatMode();
+  if (mode === 'pitch') {
+    handlePitchMode();
+  } else if (mode === 'beat') {
+    handleBeatMode();
+  } else if (mode === 'volume') {
+    handleVolumeMode();
+  } else if (mode === 'chord') {
+    handleChordMode();
   }
 }
 
 // 设计1：音高可视化 [cite: 25]
-function drawPitchMode() {
-  // 映射逻辑：位置越高，颜色越暖 (240蓝 -> 0红) 
-  let hueValue = map(mouseY, height, 0, 240, 0);
-  let brightness = map(mouseY, height, 0, 40, 100); [cite: 3]
+function handlePitchMode() {
+  // 映射：位置越高 -> 颜色越暖 
+  let hue = map(mouseY, height, 0, 240, 0); // 蓝(240)到红(0)
+  let bright = map(mouseY, height, 0, 50, 100);
   
-  fill(hueValue, 80, brightness);
-  noStroke();
-  ellipse(mouseX, mouseY, 50, 50); 
-  
-  // 创意授权：实时线条 
   if (mouseIsPressed) {
-    notes.push({x: mouseX, y: mouseY, h: hueValue});
+    // 创意授权：学生自由画出旋律线 
+    trails.push({x: mouseX, y: mouseY, h: hue}); 
+    fill(hue, 80, bright);
+    ellipse(mouseX, mouseY, 40);
   }
   
-  for (let n of notes) {
-    fill(n.h, 80, 80);
-    ellipse(n.x, n.y, 10, 10);
+  // 绘制积累的旋律画廊 [cite: 29]
+  for (let p of trails) {
+    noStroke();
+    fill(p.h, 70, 80, 0.5);
+    ellipse(p.x, p.y, 10);
   }
 }
 
 // 设计2：节拍可视化 [cite: 31]
-function drawBeatMode() {
-  beatTimer += deltaTime;
-  let beatInterval = 1000; // 1秒一拍
-  let phase = (beatTimer % beatInterval) / beatInterval;
+function handleBeatMode() {
+  let interval = 1000; // 假设 60 BPM
+  let now = millis();
   
-  // 模拟心跳线波动 
-  stroke(phase < 0.2 ? 0 : 200, 80, 100); 
-  strokeWeight(4);
+  if (now - lastBeatTime > interval) {
+    lastBeatTime = now;
+    beatCount = (beatCount % 4) + 1;
+    triggerVibrate(beatCount); // 触觉反馈 
+  }
+
+  // 心跳线波动 [cite: 8]
+  stroke(beatCount === 1 ? 0 : 200, 80, 100); 
+  noFill();
   beginShape();
-  for (let x = 0; x < width; x++) {
-    let y = height/2 + sin(x * 0.02 + frameCount * 0.1) * (phase < 0.2 ? 100 : 20);
+  for (let x = 0; x < width; x += 10) {
+    let wave = (beatCount === 1) ? 100 : 20; // 强拍剧烈跳动 [cite: 8]
+    let y = height/2 + sin(x * 0.02 + frameCount * 0.1) * wave;
     vertex(x, y);
   }
   endShape();
-  
-  // 手机振动逻辑 
-  if (phase < 0.05 && window.navigator.vibrate) {
-    window.navigator.vibrate(200); // 强拍长振 
+}
+
+// 设计3：音量与力度 [cite: 35]
+function handleVolumeMode() {
+  let r = map(mouseX, 0, width, 20, 200); // 映射光晕半径 [cite: 11]
+  noStroke();
+  for(let i = 5; i > 0; i--) {
+    fill(60, 80, 100, 0.2); // 黄色光效
+    ellipse(width/2, height/2, r * i * 0.5);
+  }
+  // 提示文字
+  fill(255);
+  text(mouseX < width/2 ? "p (Piano)" : "f (Forte)", width/2 - 20, height/2 + r + 20);
+}
+
+// 设计4：和弦色彩 [cite: 39]
+function handleChordMode() {
+  // 大三和弦暖色，小三和弦冷色 [cite: 15, 40]
+  if (mouseX < width/2) {
+    background(20, 80, 40); // 暖橙色
+    fill(255); text("大三和弦：明亮快乐", 50, 100);
+  } else {
+    background(240, 80, 40); // 冷蓝色
+    fill(255); text("小三和弦：柔和忧伤", width/2 + 50, 100);
   }
 }
 
-// 响应窗口大小变化
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+// 辅助功能：手机振动接口 [cite: 9, 32]
+function triggerVibrate(beat) {
+  if (!window.navigator.vibrate) return;
+  if (beat === 1) window.navigator.vibrate(300); // 强拍长振
+  else window.navigator.vibrate(100); // 弱拍短振
+}
+
+function setMode(m) {
+  mode = m;
+  trails = [];
+  document.getElementById('title').innerText = m.toUpperCase() + " 模式";
 }
