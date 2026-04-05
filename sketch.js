@@ -13,7 +13,8 @@ let currentBeat = 0;
 let lastBeatTime = 0;
 let bpm = 80;
 let beatInterval = 60000 / bpm;
-let waveAmp = 0; // 实时波动幅度
+let waveAmp = 0;
+let errorCount = 0; // 记录错误次数 
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -41,24 +42,49 @@ window.setLabMode = function(m) {
   if (m === 'beat') {
     quizLevel = 0; 
     currentBeat = 0;
+    errorCount = 0; // 开启挑战时重置错误记录 [cite: 18]
     lastBeatTime = millis();
   }
 };
 
 window.submitBeatAnswer = function(ans) {
-  if (ans === beatLevels[quizLevel]) {
+  let isCorrect = (ans === beatLevels[quizLevel]);
+  let isFinished = false;
+
+  if (isCorrect) {
     if (quizLevel < beatLevels.length - 1) {
       setTimeout(() => { 
         quizLevel++; 
         currentBeat = 0;
       }, 1000);
     } else {
-      setTimeout(() => { alert("祝贺！你已通过所有节拍感官挑战！"); }, 500);
+      isFinished = true;
+      showFinalTitle(); // 挑战结束，结算称号 
     }
-    return true;
+    return { isCorrect: true, isFinished: isFinished };
+  } else {
+    errorCount++; // 记录错误 [cite: 34]
+    return { isCorrect: false, isFinished: false };
   }
-  return false;
 };
+
+// 称号结算逻辑 
+function showFinalTitle() {
+  let title = "";
+  if (errorCount === 0) {
+    title = "✨ 节奏大师 (Perfect!) ✨"; // 0次错误 
+  } else if (errorCount === 1) {
+    title = "🛡️ 节奏骑士 🛡️"; // 1次错误 
+  } else {
+    title = "📜 节奏学徒 📜"; // 2次及以上错误 
+  }
+  
+  setTimeout(() => {
+    alert("挑战完成！\n本次错误次数: " + errorCount + "\n获得称号: " + title);
+    window.setLabMode('pitch'); // 结束后返回音高模式
+    document.querySelectorAll('.nav-btn')[0].click(); // 模拟点击切换UI
+  }, 500);
+}
 
 function draw() {
   if (!isStarted) return;
@@ -74,7 +100,6 @@ function draw() {
   }
 }
 
-// 音高模式逻辑 (保持不变)
 function runPitchMode() {
   let index = floor(map(mouseY, height, 0, 0, majorScale.length));
   index = constrain(index, 0, majorScale.length - 1);
@@ -94,7 +119,6 @@ function runPitchMode() {
   }
 }
 
-// 节拍挑战逻辑：心跳线版本
 function runBeatQuizMode() {
   let targetBeat = beatLevels[quizLevel];
   let now = millis();
@@ -103,17 +127,15 @@ function runBeatQuizMode() {
     lastBeatTime = now;
     currentBeat = (currentBeat % targetBeat) + 1;
     handleBeatSensory(currentBeat, targetBeat);
-    waveAmp = 1.0; // 触发瞬间振幅最大
+    waveAmp = 1.0; 
   }
 
-  // 振幅衰减，模拟脉冲效果
   waveAmp *= 0.9; 
-
   drawHeartbeatLine(currentBeat, targetBeat, waveAmp);
   
   fill(255); textAlign(CENTER); textSize(18);
   text("感受心跳线的波动规律并选择：", width/2, 80);
-  text("当前关卡: " + (quizLevel + 1) + "/3", width/2, height - 50);
+  text("当前关卡: " + (quizLevel + 1) + "/3 | 错误次数: " + errorCount, width/2, height - 50);
 }
 
 function handleBeatSensory(beat, type) {
@@ -121,9 +143,9 @@ function handleBeatSensory(beat, type) {
   noise.amp(0.6, 0); noise.amp(0, 0.1);
 
   if (window.navigator.vibrate) {
-    if (beat === 1) window.navigator.vibrate(200); // 强拍长振 [cite: 9]
-    else if (type === 4 && beat === 3) window.navigator.vibrate(100); // 次强中振 [cite: 9]
-    else window.navigator.vibrate(50); // 弱拍短振 [cite: 9]
+    if (beat === 1) window.navigator.vibrate(200); 
+    else if (type === 4 && beat === 3) window.navigator.vibrate(100); 
+    else window.navigator.vibrate(50); 
   }
 }
 
@@ -131,16 +153,15 @@ function drawHeartbeatLine(beat, type, amp) {
   let centerX = width / 2;
   let centerY = height / 2;
   
-  // 核心逻辑：根据拍子决定颜色和幅度
-  let lineHue = 210; // 默认蓝色 (弱拍) 
-  let maxJump = 30;  // 默认小波动
+  let lineHue = 210; 
+  let maxJump = 30;  
   
   if (beat === 1) {
-    lineHue = 0;      // 红色 (强拍) 
-    maxJump = 150;    // 大波动 
+    lineHue = 0;      
+    maxJump = 150;    
   } else if (type === 4 && beat === 3) {
-    lineHue = 120;    // 绿色 (次强拍)
-    maxJump = 80;     // 中波动
+    lineHue = 120;    
+    maxJump = 80;     
   }
 
   stroke(lineHue, 80, 100);
@@ -149,25 +170,15 @@ function drawHeartbeatLine(beat, type, amp) {
   
   beginShape();
   for (let x = 0; x < width; x += 5) {
-    // 模拟心跳波形逻辑
     let distToCenter = abs(x - centerX);
     let peak = 0;
-    
-    // 只在屏幕中央附近产生剧烈跳动
     if (distToCenter < 100) {
       peak = sin(map(distToCenter, 0, 100, 0, PI * 2)) * maxJump * amp;
     }
-    
-    // 叠加背景微弱震荡
     let y = centerY + peak + sin(x * 0.05 + frameCount * 0.2) * 5;
     vertex(x, y);
   }
   endShape();
-  
-  // 绘制辅助装饰点，增强节奏感
-  fill(lineHue, 80, 100);
-  noStroke();
-  ellipse(centerX, centerY - maxJump * amp, 10);
 }
 
 function windowResized() { resizeCanvas(windowWidth, windowHeight); }
