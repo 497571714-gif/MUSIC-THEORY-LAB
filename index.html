@@ -20,7 +20,7 @@
         }
         #ui-layer { 
             position: absolute; top: 0; left: 0; width: 100%; 
-            background: rgba(255,255,255,0.1); display: flex; 
+            background: rgba(255,255,255,0.1); display: flex; flex-wrap: wrap;
             justify-content: center; gap: 10px; padding: 10px; z-index: 10; 
         }
         .nav-btn {
@@ -28,39 +28,45 @@
             color: white; padding: 5px 15px; cursor: pointer; border-radius: 5px;
         }
         .active-btn { background: #3498db !important; }
+        #sub-ui { margin-top: 5px; display: none; width: 100%; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
         <h1>乐理感官实验室</h1>
-        <p>基于中学生一级乐理教学框架</p>
         <button id="start-button" onclick="activateAll()">开启实验</button>
     </div>
 
     <div id="ui-layer">
-        <button class="nav-btn active-btn" onclick="changeMode(this, 'pitch')">音高</button>
-        <button class="nav-btn" onclick="changeMode(this, 'beat')">节拍</button>
-        <button class="nav-btn" onclick="changeMode(this, 'volume')">力度</button>
-        <button class="nav-btn" onclick="changeMode(this, 'chord')">和弦</button>
+        <div>
+            <button class="nav-btn active-btn" onclick="changeMode(this, 'pitch')">音高</button>
+            <button class="nav-btn" onclick="changeMode(this, 'beat')">节拍</button>
+            <button class="nav-btn" onclick="changeMode(this, 'volume')">力度</button>
+            <button class="nav-btn" onclick="changeMode(this, 'chord')">和弦</button>
+        </div>
+        <div id="sub-ui">
+            <button class="nav-btn" onclick="setBeatType(2)">2/4 拍</button>
+            <button class="nav-btn" onclick="setBeatType(3)">3/4 拍</button>
+            <button class="nav-btn" onclick="setBeatType(4)">4/4 拍</button>
+        </div>
     </div>
 
     <script>
         function activateAll() {
-            // 隐藏启动层
             document.getElementById('start-screen').style.display = 'none';
-            // 调用 sketch.js 里的初始化函数
-            if (window.startLabAudio) {
-                window.startLabAudio();
-            }
+            if (window.startLabAudio) window.startLabAudio();
         }
 
         function changeMode(btn, modeName) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-btn'));
             btn.classList.add('active-btn');
-            if (window.setLabMode) {
-                window.setLabMode(modeName);
-            }
+            document.getElementById('sub-ui').style.display = (modeName === 'beat') ? 'block' : 'none';
+            if (window.setLabMode) window.setLabMode(modeName);
+        }
+
+        function setBeatType(num) {
+            if (window.updateBeatType) window.updateBeatType(num);
         }
     </script>
     <script src="sketch.js"></script>
