@@ -14,7 +14,14 @@ let lastBeatTime = 0;
 let bpm = 80;
 let beatInterval = 60000 / bpm;
 let waveAmp = 0;
-let errorCount = 0; // 记录错误次数 
+let beatErrorCount = 0;
+
+// 力度挑战参数
+let volLevel = 0; // 当前第几题
+let volSequence = [0, 2, 1, 3]; // 题目顺序：p, mf, mp, f
+const volLabels = ["p", "mp", "mf", "f"];
+let volErrorCount = 0;
+let ripples = [];
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -40,51 +47,59 @@ window.setLabMode = function(m) {
   currentMode = m;
   trails = [];
   if (m === 'beat') {
-    quizLevel = 0; 
-    currentBeat = 0;
-    errorCount = 0; // 开启挑战时重置错误记录 [cite: 18]
+    quizLevel = 0; currentBeat = 0; beatErrorCount = 0;
+    lastBeatTime = millis();
+  } else if (m === 'volume') {
+    volLevel = 0; volErrorCount = 0; ripples = [];
     lastBeatTime = millis();
   }
 };
 
+// --- 逻辑处理函数 ---
+
 window.submitBeatAnswer = function(ans) {
   let isCorrect = (ans === beatLevels[quizLevel]);
-  let isFinished = false;
-
   if (isCorrect) {
     if (quizLevel < beatLevels.length - 1) {
-      setTimeout(() => { 
-        quizLevel++; 
-        currentBeat = 0;
-      }, 1000);
+      setTimeout(() => { quizLevel++; currentBeat = 0; }, 1000);
     } else {
-      isFinished = true;
-      showFinalTitle(); // 挑战结束，结算称号 
+      showFinalBeatTitle();
     }
-    return { isCorrect: true, isFinished: isFinished };
+    return { isCorrect: true, isFinished: quizLevel >= beatLevels.length - 1 };
   } else {
-    errorCount++; // 记录错误 [cite: 34]
+    beatErrorCount++;
     return { isCorrect: false, isFinished: false };
   }
 };
 
-// 称号结算逻辑 
-function showFinalTitle() {
-  let title = "";
-  if (errorCount === 0) {
-    title = "✨ 节奏大师 (Perfect!) ✨"; // 0次错误 
-  } else if (errorCount === 1) {
-    title = "🛡️ 节奏骑士 🛡️"; // 1次错误 
+window.submitVolumeAnswer = function(ans) {
+  let isCorrect = (ans === volSequence[volLevel]);
+  if (isCorrect) {
+    if (volLevel < volSequence.length - 1) {
+      setTimeout(() => { volLevel++; ripples = []; }, 1000);
+    } else {
+      showFinalVolumeTitle();
+    }
+    return { isCorrect: true, isFinished: volLevel >= volSequence.length - 1 };
   } else {
-    title = "📜 节奏学徒 📜"; // 2次及以上错误 
+    volErrorCount++;
+    return { isCorrect: false, isFinished: false };
   }
-  
-  setTimeout(() => {
-    alert("挑战完成！\n本次错误次数: " + errorCount + "\n获得称号: " + title);
-    window.setLabMode('pitch'); // 结束后返回音高模式
-    document.querySelectorAll('.nav-btn')[0].click(); // 模拟点击切换UI
-  }, 500);
+};
+
+// --- 称号结算 ---
+
+function showFinalBeatTitle() {
+  let t = beatErrorCount === 0 ? "✨ 节奏大师 ✨" : (beatErrorCount === 1 ? "🛡️ 节奏骑士 🛡️" : "📜 节奏学徒 📜");
+  alert("挑战完成！获得称号: " + t);
 }
+
+function showFinalVolumeTitle() {
+  let msg = volErrorCount === 0 ? "🏆 获得称号：光影指挥家 🏆" : "挑战完成！继续加油感受力度变化吧。";
+  alert(msg);
+}
+
+// --- 渲染主循环 ---
 
 function draw() {
   if (!isStarted) return;
@@ -94,12 +109,12 @@ function draw() {
     runPitchMode();
   } else if (currentMode === 'beat') {
     runBeatQuizMode();
-  } else {
-    fill(255); textAlign(CENTER);
-    text(currentMode + " 模式开发中...", width/2, height/2);
+  } else if (currentMode === 'volume') {
+    runVolumeQuizMode();
   }
 }
 
+// 1. 音高模式
 function runPitchMode() {
   let index = floor(map(mouseY, height, 0, 0, majorScale.length));
   index = constrain(index, 0, majorScale.length - 1);
@@ -109,76 +124,92 @@ function runPitchMode() {
     osc.freq(majorScale[index]);
     envelope.play(osc);
     trails.push({x: mouseX, y: mouseY, h: hueValue});
-    noStroke();
-    fill(hueValue, 80, 100, 0.6);
-    ellipse(mouseX, mouseY, 50);
+    noStroke(); fill(hueValue, 80, 100, 0.6); ellipse(mouseX, mouseY, 50);
   }
-  for (let t of trails) {
-    fill(t.h, 70, 80, 0.4);
-    ellipse(t.x, t.y, 10);
-  }
+  for (let t of trails) { fill(t.h, 70, 80, 0.4); ellipse(t.x, t.y, 10); }
 }
 
+// 2. 节拍模式 (心跳线)
 function runBeatQuizMode() {
   let targetBeat = beatLevels[quizLevel];
   let now = millis();
-  
   if (now - lastBeatTime > beatInterval) {
     lastBeatTime = now;
     currentBeat = (currentBeat % targetBeat) + 1;
     handleBeatSensory(currentBeat, targetBeat);
     waveAmp = 1.0; 
   }
-
   waveAmp *= 0.9; 
   drawHeartbeatLine(currentBeat, targetBeat, waveAmp);
-  
-  fill(255); textAlign(CENTER); textSize(18);
-  text("感受心跳线的波动规律并选择：", width/2, 80);
-  text("当前关卡: " + (quizLevel + 1) + "/3 | 错误次数: " + errorCount, width/2, height - 50);
 }
 
 function handleBeatSensory(beat, type) {
   filter.freq(beat === 1 ? 400 : 1500);
   noise.amp(0.6, 0); noise.amp(0, 0.1);
-
   if (window.navigator.vibrate) {
-    if (beat === 1) window.navigator.vibrate(200); 
-    else if (type === 4 && beat === 3) window.navigator.vibrate(100); 
-    else window.navigator.vibrate(50); 
+    let d = (beat === 1) ? 200 : ((type === 4 && beat === 3) ? 100 : 50);
+    window.navigator.vibrate(d);
   }
 }
 
 function drawHeartbeatLine(beat, type, amp) {
-  let centerX = width / 2;
-  let centerY = height / 2;
-  
-  let lineHue = 210; 
-  let maxJump = 30;  
-  
-  if (beat === 1) {
-    lineHue = 0;      
-    maxJump = 150;    
-  } else if (type === 4 && beat === 3) {
-    lineHue = 120;    
-    maxJump = 80;     
-  }
-
-  stroke(lineHue, 80, 100);
-  strokeWeight(4);
-  noFill();
-  
+  let centerX = width/2, centerY = height/2;
+  let h = (beat === 1) ? 0 : ((type === 4 && beat === 3) ? 120 : 210);
+  let j = (beat === 1) ? 150 : ((type === 4 && beat === 3) ? 80 : 30);
+  stroke(h, 80, 100); strokeWeight(4); noFill();
   beginShape();
   for (let x = 0; x < width; x += 5) {
-    let distToCenter = abs(x - centerX);
-    let peak = 0;
-    if (distToCenter < 100) {
-      peak = sin(map(distToCenter, 0, 100, 0, PI * 2)) * maxJump * amp;
-    }
-    let y = centerY + peak + sin(x * 0.05 + frameCount * 0.2) * 5;
-    vertex(x, y);
+    let d = abs(x - centerX);
+    let peak = d < 100 ? sin(map(d, 0, 100, 0, PI * 2)) * j * amp : 0;
+    vertex(x, centerY + peak + sin(x * 0.05 + frameCount * 0.2) * 5);
   }
   endShape();
+}
+
+// 3. 力度模式 (光晕波纹)
+function runVolumeQuizMode() {
+  let targetVol = volSequence[volLevel]; // 0:p, 1:mp, 2:mf, 3:f
+  let now = millis();
+  
+  // 模拟周期性发声
+  if (now - lastBeatTime > 1500) {
+    lastBeatTime = now;
+    // 根据力度触发感官反馈 
+    let baseR = [30, 60, 100, 160][targetVol];
+    let waveS = [1, 2, 4, 7][targetVol];
+    let bright = [30, 55, 80, 100][targetVol];
+    let vib = [30, 70, 130, 250][targetVol];
+    
+    ripples.push({ r: baseR, maxR: baseR * 3, s: waveS, b: bright, a: 1.0 });
+    if (window.navigator.vibrate) window.navigator.vibrate(vib);
+    
+    // 播放对应力度的声音
+    osc.freq(440); // 标准A音
+    osc.amp([0.1, 0.3, 0.6, 1.0][targetVol], 0.1);
+    osc.amp(0, 0.5);
+  }
+
+  // 渲染波纹 [cite: 13, 36]
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    let r = ripples[i];
+    noStroke();
+    fill(60, 80, r.b, r.a); // 暖黄色光晕
+    ellipse(width/2, height/2, r.r);
+    
+    // 外扩波纹
+    noFill();
+    stroke(60, 80, r.b, r.a);
+    strokeWeight(2);
+    ellipse(width/2, height/2, r.r * 1.5);
+    
+    r.r += r.s;
+    r.a -= 0.02;
+    if (r.a <= 0) ripples.splice(i, 1);
+  }
+
+  fill(255); textAlign(CENTER);
+  text("观察波纹扩散速度与光晕亮度，判断力度标记：", width/2, 80);
+  text("当前题目: " + (volLevel + 1) + "/4 | 错误: " + volErrorCount, width/2, height - 50);
 }
 
 function windowResized() { resizeCanvas(windowWidth, windowHeight); }
