@@ -28,9 +28,9 @@
             color: white; padding: 5px 15px; cursor: pointer; border-radius: 5px;
         }
         .active-btn { background: #3498db !important; }
-        #quiz-options { display: none; margin-top: 10px; gap: 10px; }
+        .option-container { display: none; margin-top: 10px; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .quiz-btn { background: #2ecc71; border: none; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #feedback { color: #f1c40f; font-weight: bold; margin-top: 5px; height: 20px; }
+        #feedback { color: #f1c40f; font-weight: bold; margin-top: 5px; height: 20px; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
 <body>
@@ -42,16 +42,24 @@
 
     <div id="ui-layer">
         <div id="main-nav">
-            <button class="nav-btn active-btn" onclick="changeMode(this, 'pitch')">旋律画廊</button>
+            <button class="nav-btn active-btn" onclick="changeMode(this, 'pitch')">音高</button>
             <button class="nav-btn" onclick="changeMode(this, 'beat')">节拍挑战</button>
-            <button class="nav-btn" onclick="changeMode(this, 'volume')">力度</button>
+            <button class="nav-btn" onclick="changeMode(this, 'volume')">力度挑战</button>
             <button class="nav-btn" onclick="changeMode(this, 'chord')">和弦</button>
         </div>
         <div id="feedback"></div>
-        <div id="quiz-options">
-            <button class="quiz-btn" onclick="checkAnswer(2)">2/4 拍</button>
-            <button class="quiz-btn" onclick="checkAnswer(3)">3/4 拍</button>
-            <button class="quiz-btn" onclick="checkAnswer(4)">4/4 拍</button>
+        
+        <div id="beat-options" class="option-container">
+            <button class="quiz-btn" onclick="checkBeat(2)">2/4 拍</button>
+            <button class="quiz-btn" onclick="checkBeat(3)">3/4 拍</button>
+            <button class="quiz-btn" onclick="checkBeat(4)">4/4 拍</button>
+        </div>
+
+        <div id="volume-options" class="option-container">
+            <button class="quiz-btn" onclick="checkVolume(0)">p (弱)</button>
+            <button class="quiz-btn" onclick="checkVolume(1)">mp (中弱)</button>
+            <button class="quiz-btn" onclick="checkVolume(2)">mf (中强)</button>
+            <button class="quiz-btn" onclick="checkVolume(3)">f (强)</button>
         </div>
     </div>
 
@@ -64,22 +72,36 @@
         function changeMode(btn, modeName) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-btn'));
             btn.classList.add('active-btn');
-            document.getElementById('quiz-options').style.display = (modeName === 'beat') ? 'flex' : 'none';
+            
+            document.getElementById('beat-options').style.display = (modeName === 'beat') ? 'flex' : 'none';
+            document.getElementById('volume-options').style.display = (modeName === 'volume') ? 'flex' : 'none';
             document.getElementById('feedback').innerText = "";
+            
             if (window.setLabMode) window.setLabMode(modeName);
         }
 
-        function checkAnswer(ans) {
+        function checkBeat(ans) {
             if (window.submitBeatAnswer) {
-                let result = window.submitBeatAnswer(ans);
-                let fb = document.getElementById('feedback');
-                if (result.isCorrect) {
-                    fb.innerText = "正确！" + (result.isFinished ? "" : "进入下一关...");
-                    fb.style.color = "#2ecc71";
-                } else {
-                    fb.innerText = "答错了，再感受一次心跳线...";
-                    fb.style.color = "#e74c3c";
-                }
+                let res = window.submitBeatAnswer(ans);
+                updateFeedback(res);
+            }
+        }
+
+        function checkVolume(ans) {
+            if (window.submitVolumeAnswer) {
+                let res = window.submitVolumeAnswer(ans);
+                updateFeedback(res);
+            }
+        }
+
+        function updateFeedback(res) {
+            let fb = document.getElementById('feedback');
+            if (res.isCorrect) {
+                fb.innerText = "正确！" + (res.isFinished ? "" : "进入下一关...");
+                fb.style.color = "#2ecc71";
+            } else {
+                fb.innerText = "感受错误，请再次观察视觉波纹...";
+                fb.style.color = "#e74c3c";
             }
         }
     </script>
