@@ -71,13 +71,13 @@
 
         function checkAnswer(ans) {
             if (window.submitBeatAnswer) {
-                let isCorrect = window.submitBeatAnswer(ans);
+                let result = window.submitBeatAnswer(ans);
                 let fb = document.getElementById('feedback');
-                if (isCorrect) {
-                    fb.innerText = "正确！进入下一关...";
+                if (result.isCorrect) {
+                    fb.innerText = "正确！" + (result.isFinished ? "" : "进入下一关...");
                     fb.style.color = "#2ecc71";
                 } else {
-                    fb.innerText = "再试听一次？";
+                    fb.innerText = "答错了，再感受一次心跳线...";
                     fb.style.color = "#e74c3c";
                 }
             }
