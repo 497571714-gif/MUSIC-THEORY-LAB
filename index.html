@@ -3,106 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>乐理感官实验室 - 游戏化教学</title>
+    <title>乐理感官实验室</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #000; 
-            overflow: hidden; 
-            font-family: "Microsoft YaHei", sans-serif;
-        }
-        
-        /* 启动界面：解决浏览器音频授权问题 */
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         #start-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, #222 0%, #000 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            text-align: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #222, #000);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; color: white;
         }
-
         #start-button {
-            padding: 15px 40px;
-            font-size: 24px;
-            background: #e67e22;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(230, 126, 34, 0.5);
-            transition: transform 0.2s;
+            padding: 15px 40px; font-size: 20px; background: #e67e22;
+            color: white; border: none; border-radius: 30px; cursor: pointer;
         }
-
-        #start-button:hover {
-            transform: scale(1.1);
-            background: #d35400;
-        }
-
-        /* 顶部导航菜单 */
         #ui-layer { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            z-index: 10; 
+            position: absolute; top: 0; left: 0; width: 100%; 
+            background: rgba(255,255,255,0.1); display: flex; 
+            justify-content: center; gap: 10px; padding: 10px; z-index: 10; 
         }
-
         .nav-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 5px 15px; cursor: pointer; border-radius: 5px;
         }
-
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        .active-btn {
-            background: #3498db !important;
-            border-color: #2980b9;
-        }
-
-        /* 底部提示信息 */
-        #hint-text {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            pointer-events: none;
-        }
+        .active-btn { background: #3498db !important; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
         <h1>乐理感官实验室</h1>
-        <p style="margin-bottom: 30px;">在中等音量下体验最佳感官效果</p>
-        <button id="start-button" onclick="initLab()">开启实验</button>
+        <p>基于中学生一级乐理教学框架</p>
+        <button id="start-button" onclick="activateAll()">开启实验</button>
     </div>
 
     <div id="ui-layer">
-        <button class="nav-btn active-btn" onclick="switchMode(this, 'pitch')">音高可视化</button>
-        <button class="nav-btn" onclick="switchMode(this, 'beat')">节拍动力学</button>
-        <button class="nav-
+        <button class="nav-btn active-btn" onclick="changeMode(this, 'pitch')">音高</button>
+        <button class="nav-btn" onclick="changeMode(this, 'beat')">节拍</button>
+        <button class="nav-btn" onclick="changeMode(this, 'volume')">力度</button>
+        <button class="nav-btn" onclick="changeMode(this, 'chord')">和弦</button>
+    </div>
+
+    <script>
+        function activateAll() {
+            // 隐藏启动层
+            document.getElementById('start-screen').style.display = 'none';
+            // 调用 sketch.js 里的初始化函数
+            if (window.startLabAudio) {
+                window.startLabAudio();
+            }
+        }
+
+        function changeMode(btn, modeName) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+            if (window.setLabMode) {
+                window.setLabMode(modeName);
+            }
+        }
+    </script>
+    <script src="sketch.js"></script>
+</body>
+</html>
