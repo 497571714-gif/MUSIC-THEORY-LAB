@@ -2,29 +2,107 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>乐理感官实验室</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乐理感官实验室 - 游戏化教学</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <div id="start-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; display:flex; justify-content:center; align-items:center;">
-    <button onclick="startLab()" style="padding:20px 40px; font-size:20px;">点击进入实验室（激活音频与感官）</button>
-</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
-        #ui-layer { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; z-index: 10; }
-        button { margin-right: 5px; padding: 8px; cursor: pointer; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #000; 
+            overflow: hidden; 
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        
+        /* 启动界面：解决浏览器音频授权问题 */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+        }
+
+        #start-button {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(230, 126, 34, 0.5);
+            transition: transform 0.2s;
+        }
+
+        #start-button:hover {
+            transform: scale(1.1);
+            background: #d35400;
+        }
+
+        /* 顶部导航菜单 */
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 10; 
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .active-btn {
+            background: #3498db !important;
+            border-color: #2980b9;
+        }
+
+        /* 底部提示信息 */
+        #hint-text {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <div id="start-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; display:flex; justify-content:center; align-items:center;">
-    <button onclick="startLab()" style="padding:20px 40px; font-size:20px;">点击进入实验室（激活音频与感官）</button>
-</div>
-    <div id="ui-layer">
-        <h2 id="title">音高实验室</h2>
-        <button onclick="setMode('pitch')">1. 音高</button>
-        <button onclick="setMode('beat')">2. 节拍</button>
-        <button onclick="setMode('volume')">3. 力度</button>
-        <button onclick="setMode('chord')">4. 和弦</button>
-        <p id="hint">点击屏幕开始互动</p>
+
+    <div id="start-screen">
+        <h1>乐理感官实验室</h1>
+        <p style="margin-bottom: 30px;">在中等音量下体验最佳感官效果</p>
+        <button id="start-button" onclick="initLab()">开启实验</button>
     </div>
-    <script src="sketch.js"></script>
-</body>
-</html>
+
+    <div id="ui-layer">
+        <button class="nav-btn active-btn" onclick="switchMode(this, 'pitch')">音高可视化</button>
+        <button class="nav-btn" onclick="switchMode(this, 'beat')">节拍动力学</button>
+        <button class="nav-
