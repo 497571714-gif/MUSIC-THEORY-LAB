@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <title>乐理感官实验室</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
-        canvas { display: block; }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        #ui-layer { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; z-index: 10; }
+        button { margin-right: 5px; padding: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <div id="ui-layer">
+        <h2 id="title">音高实验室</h2>
+        <button onclick="setMode('pitch')">1. 音高</button>
+        <button onclick="setMode('beat')">2. 节拍</button>
+        <button onclick="setMode('volume')">3. 力度</button>
+        <button onclick="setMode('chord')">4. 和弦</button>
+        <p id="hint">点击屏幕开始互动</p>
+    </div>
     <script src="sketch.js"></script>
 </body>
 </html>
