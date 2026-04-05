@@ -72,11 +72,9 @@
         function changeMode(btn, modeName) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-btn'));
             btn.classList.add('active-btn');
-            
             document.getElementById('beat-options').style.display = (modeName === 'beat') ? 'flex' : 'none';
             document.getElementById('volume-options').style.display = (modeName === 'volume') ? 'flex' : 'none';
             document.getElementById('feedback').innerText = "";
-            
             if (window.setLabMode) window.setLabMode(modeName);
         }
 
