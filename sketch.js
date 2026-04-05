@@ -3,10 +3,8 @@ let isStarted = false;
 let osc, envelope, noise, filter;
 let trails = [];
 
-// 音高参数
 const majorScale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
 
-// 节拍挑战参数
 let quizLevel = 0; 
 let beatLevels = [2, 3, 4];
 let currentBeat = 0;
@@ -16,16 +14,14 @@ let beatInterval = 60000 / bpm;
 let waveAmp = 0;
 let beatErrorCount = 0;
 
-// 力度挑战参数
-let volLevel = 0; // 当前第几题
-let volSequence = [0, 2, 1, 3]; // 题目顺序：p, mf, mp, f
-const volLabels = ["p", "mp", "mf", "f"];
+let volLevel = 0; 
+let volSequence = [0, 2, 1, 3]; 
 let volErrorCount = 0;
 let ripples = [];
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  colorMode(HSB, 360, 100, 100);
+  colorMode(HSB, 360, 100, 100, 1); // 开启 alpha 通道
   
   osc = new p5.Oscillator('sine');
   envelope = new p5.Envelope();
@@ -54,8 +50,6 @@ window.setLabMode = function(m) {
     lastBeatTime = millis();
   }
 };
-
-// --- 逻辑处理函数 ---
 
 window.submitBeatAnswer = function(ans) {
   let isCorrect = (ans === beatLevels[quizLevel]);
@@ -87,8 +81,6 @@ window.submitVolumeAnswer = function(ans) {
   }
 };
 
-// --- 称号结算 ---
-
 function showFinalBeatTitle() {
   let t = beatErrorCount === 0 ? "✨ 节奏大师 ✨" : (beatErrorCount === 1 ? "🛡️ 节奏骑士 🛡️" : "📜 节奏学徒 📜");
   alert("挑战完成！获得称号: " + t);
@@ -98,8 +90,6 @@ function showFinalVolumeTitle() {
   let msg = volErrorCount === 0 ? "🏆 获得称号：光影指挥家 🏆" : "挑战完成！继续加油感受力度变化吧。";
   alert(msg);
 }
-
-// --- 渲染主循环 ---
 
 function draw() {
   if (!isStarted) return;
@@ -114,12 +104,10 @@ function draw() {
   }
 }
 
-// 1. 音高模式
 function runPitchMode() {
   let index = floor(map(mouseY, height, 0, 0, majorScale.length));
   index = constrain(index, 0, majorScale.length - 1);
   let hueValue = map(index, 0, majorScale.length - 1, 220, 0);
-
   if (mouseIsPressed) {
     osc.freq(majorScale[index]);
     envelope.play(osc);
@@ -129,7 +117,6 @@ function runPitchMode() {
   for (let t of trails) { fill(t.h, 70, 80, 0.4); ellipse(t.x, t.y, 10); }
 }
 
-// 2. 节拍模式 (心跳线)
 function runBeatQuizMode() {
   let targetBeat = beatLevels[quizLevel];
   let now = millis();
@@ -166,49 +153,48 @@ function drawHeartbeatLine(beat, type, amp) {
   endShape();
 }
 
-// 3. 力度模式 (光晕波纹)
 function runVolumeQuizMode() {
-  let targetVol = volSequence[volLevel]; // 0:p, 1:mp, 2:mf, 3:f
+  let targetVol = volSequence[volLevel]; 
   let now = millis();
   
-  // 模拟周期性发声
-  if (now - lastBeatTime > 1500) {
+  if (now - lastBeatTime > 1800) {
     lastBeatTime = now;
-    // 根据力度触发感官反馈 
-    let baseR = [30, 60, 100, 160][targetVol];
-    let waveS = [1, 2, 4, 7][targetVol];
-    let bright = [30, 55, 80, 100][targetVol];
-    let vib = [30, 70, 130, 250][targetVol];
+    let baseR = [40, 70, 120, 180][targetVol];
+    let waveS = [1, 1.8, 3.5, 6][targetVol];
+    let bright = [40, 60, 85, 100][targetVol];
+    let vib = [20, 60, 120, 250][targetVol];
+    // 鲜明浅色系：蓝(210), 绿(120), 黄(50), 红(0)
+    let hue = [210, 120, 50, 0][targetVol];
     
-    ripples.push({ r: baseR, maxR: baseR * 3, s: waveS, b: bright, a: 1.0 });
+    ripples.push({ r: baseR, maxR: baseR * 4, s: waveS, b: bright, h: hue, a: 0.6 });
     if (window.navigator.vibrate) window.navigator.vibrate(vib);
     
-    // 播放对应力度的声音
-    osc.freq(440); // 标准A音
+    osc.freq(440);
     osc.amp([0.1, 0.3, 0.6, 1.0][targetVol], 0.1);
-    osc.amp(0, 0.5);
+    osc.amp(0, 0.6);
   }
 
-  // 渲染波纹 [cite: 13, 36]
   for (let i = ripples.length - 1; i >= 0; i--) {
     let r = ripples[i];
+    
+    // 渲染柔软的多层光晕
     noStroke();
-    fill(60, 80, r.b, r.a); // 暖黄色光晕
+    for(let layer = 3; layer > 0; layer--) {
+      fill(r.h, 65, r.b, (r.a / layer) * 0.4); 
+      ellipse(width/2, height/2, r.r * (1 + layer * 0.2));
+    }
+    
+    // 核心扩散圆
+    fill(r.h, 75, r.b, r.a);
     ellipse(width/2, height/2, r.r);
     
-    // 外扩波纹
-    noFill();
-    stroke(60, 80, r.b, r.a);
-    strokeWeight(2);
-    ellipse(width/2, height/2, r.r * 1.5);
-    
     r.r += r.s;
-    r.a -= 0.02;
+    r.a -= 0.01;
     if (r.a <= 0) ripples.splice(i, 1);
   }
 
-  fill(255); textAlign(CENTER);
-  text("观察波纹扩散速度与光晕亮度，判断力度标记：", width/2, 80);
+  fill(255); textAlign(CENTER); textSize(18);
+  text("观察柔软光晕的色调与扩散速度，判断力度标记：", width/2, 80);
   text("当前题目: " + (volLevel + 1) + "/4 | 错误: " + volErrorCount, width/2, height - 50);
 }
 
